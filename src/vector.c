@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-ErrType(Vector) Vector_init(size_t member_size) {
+Errable(Vector) Vector_init(size_t member_size) {
 	Vector v;
-	Error result;
+	VectorError result;
 	if ((result = Vector_create(&v, member_size)))
 		return Err(result, Vector);
 	return Ok(v, Vector);
@@ -18,36 +18,36 @@ void Vector_default(Vector *v, size_t member_size) {
 	v->_capacity = 0;
 }
 
-Error Vector_create(Vector *v, size_t member_size) {
+VectorError Vector_create(Vector *v, size_t member_size) {
 	void *data = malloc(32 * member_size);
-	if (!data) return OOM;
+	if (!data) return VEC_ERR_OOM;
 
 	v->data = data;
 	v->_member_size = member_size;
 	v->_capacity = 32;
 	v->size = 0;
-	return SUCCESS;
+	return VEC_ERR_SUCCESS;
 }
 
-Error Vector_cpy(Vector *dest, const Vector *src) {
+VectorError Vector_cpy(Vector *dest, const Vector *src) {
 	if (!src) {
 		Vector_default(dest, 0);
-		return SUCCESS;
+		return VEC_ERR_SUCCESS;
 	}
 
 	if (src->size == 0) {
 		Vector_default(dest, src->_member_size);
-		return SUCCESS;
+		return VEC_ERR_SUCCESS;
 	}
 
 	void *data = realloc(dest->data, src->_member_size * src->size);
-	if (!data) return OOM;
+	if (!data) return VEC_ERR_OOM;
 	dest->data = data;
 	memcpy(dest->data, src->data, src->_member_size * src->size);
 	dest->size = src->size;
 	dest->_member_size = src->_member_size;
 	dest->_capacity = 0;
-	return SUCCESS;
+	return VEC_ERR_SUCCESS;
 }
 
 
@@ -80,13 +80,13 @@ void Vector_clear(Vector *v) {
 	v->size = 0;
 }
 
-Error Vector_shrink(Vector *v) {
-	if (v->_capacity == 0) return SUCCESS;
+VectorError Vector_shrink(Vector *v) {
+	if (v->_capacity == 0) return VEC_ERR_SUCCESS;
 	void *data = realloc(v->data, v->size * v->_member_size);
-	if (!data) return OOM;
+	if (!data) return VEC_ERR_OOM;
 	v->data = data;
 	v->_capacity = 0;
-	return SUCCESS;
+	return VEC_ERR_SUCCESS;
 }
 
 size_t Vector_size(Vector *v) {
@@ -110,27 +110,27 @@ void Vector_set(Vector *v, size_t index, void *data) {
 	memcpy(ptr, data, v->_member_size);
 }
 
-Error Vector_reserve(Vector *v, size_t capacity) {
-	if (v->_capacity >= capacity) return SUCCESS;
+VectorError Vector_reserve(Vector *v, size_t capacity) {
+	if (v->_capacity >= capacity) return VEC_ERR_SUCCESS;
 	void *data = realloc(v->data, v->_member_size * (v->size + capacity));
-	if (!data) return OOM;
+	if (!data) return VEC_ERR_OOM;
 	v->data = data;
 	v->_capacity = capacity;
-	return SUCCESS;
+	return VEC_ERR_SUCCESS;
 }
 
-Error Vector_append(Vector *v, void *data) {
+VectorError Vector_append(Vector *v, void *data) {
 	if (v->_capacity == 0) {
-		Error result;
+		VectorError result;
 		if ((result = Vector_reserve(v, (v->size * 2) + 1)))
 			return result;
 	}
 	memcpy(((char *) v->data) + (v->size++ * v->_member_size), data, v->_member_size);
 	--v->_capacity;
-	return SUCCESS;
+	return VEC_ERR_SUCCESS;
 }
 
-Error Vector_append_members(Vector *v, void *data, size_t n) {
+VectorError Vector_append_members(Vector *v, void *data, size_t n) {
 	size_t min = n > v->_capacity ? v->_capacity : n;
 	memcpy(((char *) v->data) + (v->size * v->_member_size), data, min * v->_member_size);
 	n -= min;
@@ -138,21 +138,21 @@ Error Vector_append_members(Vector *v, void *data, size_t n) {
 	v->size += min;
 	data = ((char *) data) + (min * v->_member_size);
 
-	if (!n) return SUCCESS;
-	Error result;
+	if (!n) return VEC_ERR_SUCCESS;
+	VectorError result;
 	if ((result = Vector_reserve(v, n)))
 		return result;
 	memcpy(((char *) v->data) + (v->size * v->_member_size), data, v->_member_size * n);
 	v->size += n;
 	v->_capacity -= n;
-	return SUCCESS;
+	return VEC_ERR_SUCCESS;
 }
 
-Error Vector_append_vector(Vector *v, Vector *a) {
-	Error result;
+VectorError Vector_append_vector(Vector *v, Vector *a) {
+	VectorError result;
 	if ((result = Vector_append_members(v, a->data, a->size)))
 		return result;
-	return SUCCESS;
+	return VEC_ERR_SUCCESS;
 }
 
 void Vector_swap(Vector *v, size_t index_a, size_t index_b) {
@@ -166,9 +166,9 @@ void Vector_swap(Vector *v, size_t index_a, size_t index_b) {
 	memcpy(b, tmp, m_size);
 }
 
-Error Vector_pop_back(Vector *v) {
-	if (v->size == 0) return EMPTY_POP_BACK;
+VectorError Vector_pop_back(Vector *v) {
+	if (v->size == 0) return VEC_ERR_EMPTY_POP_BACK;
 	++v->_capacity;
 	--v->size;
-	return SUCCESS;
+	return VEC_ERR_SUCCESS;
 }

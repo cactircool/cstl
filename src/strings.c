@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-ErrType(String) String_init() {
+Errable(String) String_init() {
 	String s;
-	Error result;
+	StringError result;
 	if ((result = String_create(&s)))
 		return Err(result, String);
 	return Ok(s, String);
@@ -17,28 +17,28 @@ void String_default(String *s) {
 	s->_capacity = 0;
 }
 
-Error String_create(String *s) {
+StringError String_create(String *s) {
 	void *data = (char *) malloc(sizeof(char) * 32);
-	if (!data) return OOM;
+	if (!data) return STR_ERR_OOM;
 	s->data = data;
 	s->size = 0;
 	s->_capacity = 32;
-	return SUCCESS;
+	return STR_ERR_SUCCESS;
 }
 
-Error String_cpy(String *dest, const String *src) {
+StringError String_cpy(String *dest, const String *src) {
 	if (!src || src->size == 0) {
 		String_default(dest);
-		return SUCCESS;
+		return STR_ERR_SUCCESS;
 	}
 
 	void *data = realloc(dest->data, src->size);
-	if (!data) return OOM;
+	if (!data) return STR_ERR_OOM;
 	dest->data = data;
 	memcpy(dest->data, src->data, src->size);
 	dest->size = src->size;
 	dest->_capacity = 0;
-	return SUCCESS;
+	return STR_ERR_SUCCESS;
 }
 
 void String_mv(String *dest, String *src) {
@@ -61,13 +61,13 @@ void String_clear(String *s) {
 	s->size = 0;
 }
 
-Error String_shrink(String *s) {
-	if (s->_capacity == 0) return SUCCESS;
+StringError String_shrink(String *s) {
+	if (s->_capacity == 0) return STR_ERR_SUCCESS;
 	char *data = realloc(s->data, s->size * sizeof(char));
-	if (!data) return OOM;
+	if (!data) return STR_ERR_OOM;
 	s->data = data;
 	s->_capacity = 0;
-	return SUCCESS;
+	return STR_ERR_SUCCESS;
 }
 
 size_t String_size(const String *s) {
@@ -78,15 +78,15 @@ const char *String_raw_data(const String *s) {
 	return s->data;
 }
 
-ErrType(CString) String_cstring(String *s) {
+Errable(CString) String_cstring(String *s) {
 	if (String_size(s) == 0 || String_get(s, String_size(s) - 1) != '\0') {
-		Error result;
-		if ((result = String_reserve(s, 1)))
+		CStringError result;
+		if ((result = (CStringError) String_reserve(s, 1)))
 			return Err(result, CString);
-		if ((result = String_append_char(s, '\0')))
+		if ((result = (CStringError) String_append_char(s, '\0')))
 			return Err(result, CString);
 		if (String_get(s, String_size(s) - 1) != '\0')
-			return Err(CSTR_BAD_TERMINATOR, CString);
+			return Err(CSTR_ERR_MISSING_NULL_TERMINATOR, CString);
 	}
 	return Ok(s->data, CString);
 }
@@ -99,52 +99,52 @@ void String_set(String *s, size_t index, char c) {
 	s->data[index] = c;
 }
 
-Error String_reserve(String *s, size_t capacity) {
-	if (s->_capacity >= capacity) return SUCCESS;
+StringError String_reserve(String *s, size_t capacity) {
+	if (s->_capacity >= capacity) return STR_ERR_SUCCESS;
 	void *data = realloc(s->data, s->size + capacity);
-	if (!data) return OOM;
+	if (!data) return STR_ERR_OOM;
 	s->data = data;
 	s->_capacity += (capacity - s->_capacity);
-	return SUCCESS;
+	return STR_ERR_SUCCESS;
 }
 
-Error String_append_char(String *s, char c) {
+StringError String_append_char(String *s, char c) {
 	if (s->_capacity > 0) {
 		s->data[s->size++] = c;
 		--s->_capacity;
-		return SUCCESS;
+		return STR_ERR_SUCCESS;
 	}
 
 	size_t nlen = (s->size * 2) + 1;
 	void *data = realloc(s->data, nlen);
-	if (!data) return OOM;
+	if (!data) return STR_ERR_OOM;
 	s->data = data;
 	s->_capacity = nlen - (s->size + 1);
 	s->data[s->size++] = c;
-	return SUCCESS;
+	return STR_ERR_SUCCESS;
 }
 
-Error String_append_string(String *s, String *a) {
-	if (a->size == 0) return SUCCESS; // implies a->data == NULL or full of air
+StringError String_append_string(String *s, String *a) {
+	if (a->size == 0) return STR_ERR_SUCCESS; // implies a->data == NULL or full of air
 
 	if (s->_capacity >= a->size) {
 		memcpy(s->data + s->size, a->data, a->size);
 		s->size += a->size;
 		s->_capacity -= a->size;
-		return SUCCESS;
+		return STR_ERR_SUCCESS;
 	}
 
 	void *data = realloc(s->data, s->size + a->size);
-	if (!data) return OOM;
+	if (!data) return STR_ERR_OOM;
 	s->data = data;
 	memcpy(s->data + s->size, a->data, a->size);
 	s->size += a->size;
 	s->_capacity = 0;
-	return SUCCESS;
+	return STR_ERR_SUCCESS;
 }
 
-Error String_append_cstring(String *s, const char *a) {
-	if (!a) return SUCCESS;
+StringError String_append_cstring(String *s, const char *a) {
+	if (!a) return STR_ERR_SUCCESS;
 
 	while (*a && s->_capacity) {
 		s->data[s->size++] = *a;
@@ -152,16 +152,16 @@ Error String_append_cstring(String *s, const char *a) {
 		++a;
 	}
 
-	if (!*a) return SUCCESS;
+	if (!*a) return STR_ERR_SUCCESS;
 
 	size_t len = strlen(a);
 	void *data = realloc(s->data, s->size + len);
-	if (!data) return OOM;
+	if (!data) return STR_ERR_OOM;
 	s->data = data;
 	memcpy(s->data + s->size, a, len);
 	s->size += len;
 	s->_capacity = 0;
-	return SUCCESS;
+	return STR_ERR_SUCCESS;
 }
 
 bool String_eq_string(const String *a, const String *b) {
@@ -200,19 +200,23 @@ int String_cmp_cstring(const String *a, const char *b) {
 	return -*b;
 }
 
-char *String_begin(String *s) {
-	return s->data;
-}
-
-char *String_end(String *s) {
-	return s->data + s->size;
-}
-
-ErrType(String) String_substring(String *s, size_t from, size_t to) {
-	ErrType(String) str = String_init();
+Errable(String) String_substring(String *s, size_t from, size_t to) {
+	Errable(String) str = String_init();
 	if (str.fail) return str;
 	if ((str.fail = String_reserve(&str.success, to - from)))
 		return str;
 	memcpy(str.success.data, s->data + from, to - from);
 	return str;
+}
+
+Errable(String) String_from_cstring(const char *s) {
+	size_t len = strlen(s);
+	String str;
+	str.size = len;
+	str._capacity = 0;
+	str.data = (char *) malloc(len * sizeof(char));
+	if (!str.data)
+		return Err(STR_ERR_OOM, String);
+	memcpy(str.data, s, len);
+	return Ok(str, String);
 }

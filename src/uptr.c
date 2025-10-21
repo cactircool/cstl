@@ -1,4 +1,5 @@
 #include "uptr.h"
+#include "wptr.h"
 
 #include <stdlib.h>
 
@@ -13,8 +14,8 @@ void *UniquePtr_extract(UniquePtr *uptr) {
 	return uptr->ptr;
 }
 
-const void *UniquePtr_reader(UniquePtr *uptr) {
-	return UniquePtr_extract(uptr);
+WeakPtr *UniquePtr_reader(UniquePtr *uptr) {
+	return (WeakPtr *) uptr;
 }
 
 UniquePtr UniquePtr_writer(UniquePtr *uptr) {
