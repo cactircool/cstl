@@ -2,6 +2,8 @@
 
 #include <stddef.h>
 #include "error.h"
+#include "slice.h"
+#include "view.h"
 
 /**
  * @brief A dynamically resizing array of generic elements.
@@ -12,7 +14,7 @@
  */
 typedef struct Vector {
 	void *data;           /**< Pointer to the underlying data buffer. */
-	size_t _member_size;  /**< Size (in bytes) of each element. */
+	const size_t _member_size;  /**< Size (in bytes) of each element. */
 	size_t size;          /**< Number of elements currently in use. */
 	size_t _capacity;     /**< Allocated capacity (in elements). */
 } Vector;
@@ -207,15 +209,11 @@ void Vector_swap(Vector *v, size_t index_a, size_t index_b);
  */
 VectorError Vector_pop_back(Vector *v);
 
-/**
- * @brief Returns a typed pointer to the first element.
- */
-#define Vector_begin(v, type) ((type *) v->data)
+Errable(Vector) Vector_sublist(Vector *v, size_t from , size_t to);
 
-/**
- * @brief Returns a typed pointer to one past the last element.
- */
-#define Vector_end(v, type) (((type *) v->data) + v->size)
+ViewOf(Vector) Vector_view(Vector *v, size_t from, size_t to);
+
+SliceOf(Vector) Vector_slice(Vector *v, size_t from, size_t to);
 
 /**
  * @brief Scoped Vector context macro with automatic cleanup.

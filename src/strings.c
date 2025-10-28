@@ -1,5 +1,6 @@
 #include "strings.h"
 #include "error.h"
+#include "view.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -201,12 +202,14 @@ int String_cmp_cstring(const String *a, const char *b) {
 }
 
 Errable(String) String_substring(String *s, size_t from, size_t to) {
-	Errable(String) str = String_init();
-	if (str.fail) return str;
-	if ((str.fail = String_reserve(&str.success, to - from)))
-		return str;
-	memcpy(str.success.data, s->data + from, to - from);
-	return str;
+	String str = {
+		.size = to - from,
+		._capacity = 0,
+	};
+	str.data = malloc(str.size * sizeof(char));
+	if (!str.data) return Err(STR_ERR_OOM, String);
+	memcpy(str.data, s->data + from, to - from);
+	return Ok(str, String);
 }
 
 Errable(String) String_from_cstring(const char *s) {
@@ -219,4 +222,12 @@ Errable(String) String_from_cstring(const char *s) {
 		return Err(STR_ERR_OOM, String);
 	memcpy(str.data, s, len);
 	return Ok(str, String);
+}
+
+ViewOf(String) String_view(String *s, size_t from, size_t to) {
+	return View(s->data + from, to - from, sizeof(char));
+}
+
+SliceOf(String) String_slice(String *s, size_t from, size_t to) {
+	return Slice(s->data + from, to - from, sizeof(char));
 }

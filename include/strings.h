@@ -1,6 +1,8 @@
 #pragma once
 
 #include "error.h"
+#include "view.h"
+#include "slice.h"
 #include <stddef.h>
 #include <stdbool.h>
 
@@ -241,6 +243,10 @@ Errable(String) String_substring(String *s, size_t from, size_t to);
  * @return A Result containing the new String or an error code.
  */
 Errable(String) String_from_cstring(const char *s);
+
+ViewOf(String) String_view(String *s, size_t from, size_t to);
+
+SliceOf(String) String_slice(String *s, size_t from, size_t to);
 
 /**
  * @brief Declares a scoped String that auto-invalidates at block exit.

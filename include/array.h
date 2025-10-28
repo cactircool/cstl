@@ -1,6 +1,8 @@
 #pragma once
 
 #include "error.h"
+#include "view.h"
+#include "slice.h"
 #include <stddef.h>
 
 /**
@@ -16,7 +18,7 @@
  */
 typedef struct Array {
 	void *data;             /**< Pointer to the array’s allocated memory block. */
-	size_t _member_size;    /**< Size in bytes of each element (e.g., `sizeof(T)`). */
+	const size_t _member_size;    /**< Size in bytes of each element (e.g., `sizeof(T)`). */
 	const size_t size;      /**< Total number of elements in the array. */
 } Array;
 
@@ -151,3 +153,9 @@ size_t Array_size(Array *arr);
  * Must be called once per Array when it goes out of scope to prevent memory leaks.
  */
 void Array_invalidate(Array *arr);
+
+Errable(Array) Array_sublist(Array *arr, size_t from, size_t to);
+
+ViewOf(Array) Array_view(Array *arr, size_t from, size_t to);
+
+SliceOf(Array) Array_slice(Array *arr, size_t from, size_t to);

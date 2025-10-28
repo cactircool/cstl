@@ -1,5 +1,6 @@
 #include "vector.h"
 #include "error.h"
+#include "slice.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -13,7 +14,7 @@ Errable(Vector) Vector_init(size_t member_size) {
 
 void Vector_default(Vector *v, size_t member_size) {
 	v->data = NULL;
-	v->_member_size = member_size;
+	*((size_t *) &v->_member_size) = member_size;
 	v->size = 0;
 	v->_capacity = 0;
 }
@@ -23,7 +24,7 @@ VectorError Vector_create(Vector *v, size_t member_size) {
 	if (!data) return VEC_ERR_OOM;
 
 	v->data = data;
-	v->_member_size = member_size;
+	*((size_t *) &v->_member_size) = member_size;
 	v->_capacity = 32;
 	v->size = 0;
 	return VEC_ERR_SUCCESS;
@@ -45,7 +46,7 @@ VectorError Vector_cpy(Vector *dest, const Vector *src) {
 	dest->data = data;
 	memcpy(dest->data, src->data, src->_member_size * src->size);
 	dest->size = src->size;
-	dest->_member_size = src->_member_size;
+	*((size_t *) &dest->_member_size) = src->_member_size;
 	dest->_capacity = 0;
 	return VEC_ERR_SUCCESS;
 }
@@ -56,7 +57,7 @@ void Vector_mv(Vector *dest, Vector *src) {
 
 	dest->data = src->data;
 	dest->size = src->size;
-	dest->_member_size = src->_member_size;
+	*((size_t *) &dest->_member_size) = src->_member_size;
 	dest->_capacity = src->_capacity;
 
 	Vector_default(src, src->_member_size);
@@ -171,4 +172,24 @@ VectorError Vector_pop_back(Vector *v) {
 	++v->_capacity;
 	--v->size;
 	return VEC_ERR_SUCCESS;
+}
+
+Errable(Vector) Vector_sublist(Vector *v, size_t from , size_t to) {
+	Vector vec = {
+		.size = to - from,
+		._capacity = 0,
+		._member_size = v->_member_size,
+	};
+	vec.data = malloc(vec.size * vec._member_size);
+	if (!vec.data) return Err(VEC_ERR_OOM, Vector);
+	memcpy(vec.data, v->data + from, vec.size);
+	return Ok(vec, Vector);
+}
+
+ViewOf(Vector) Vector_view(Vector *v, size_t from, size_t to) {
+	return View(((char *) v->data) + (from * v->_member_size), to - from, v->_member_size);
+}
+
+SliceOf(Vector) Vector_slice(Vector *v, size_t from, size_t to) {
+	return Slice(((char *) v->data) + (from * v->_member_size), to - from, v->_member_size);
 }
